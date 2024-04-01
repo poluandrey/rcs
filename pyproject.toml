@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "rcs"
+version = "0.1.0"
+description = ""
+authors = ["apolumestny <anpolumestny@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+google-businessmessages = "^1.0.5"
+httplib2 = "^0.22.0"
+oauth2client = "^4.1.3"
+xlrd = "^2.0.1"
+pandas = "^2.2.1"
+openpyxl = "^3.1.2"
+xlsxwriter = "^3.2.0"
+httpx = "^0.27.0"
+requests = "^2.31.0"
+google-auth-oauthlib = "^1.2.0"
+pyjwt = "^2.8.0"
+cryptography = "^42.0.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
