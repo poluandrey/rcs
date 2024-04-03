@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from pydantic_settings import BaseSettings
 from pydantic import Extra
+from pydantic_settings import BaseSettings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-print(BASE_DIR)
+
 
 class Settings(BaseSettings):
 
@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     PATH_TO_SERVICE_ACCOUNT: str
     AGENT_ID: str
     JWT_GRANT_TYPE: str
+    REDIS_URL: str
 
     class Config:
         case_sensitive = True

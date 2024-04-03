@@ -5,4 +5,7 @@
 **/*egg-info/**
 token.json
 resources/
+.env
+.idea/
+
 

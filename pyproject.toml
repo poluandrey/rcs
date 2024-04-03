@@ -19,6 +19,11 @@ requests = "^2.31.0"
 google-auth-oauthlib = "^1.2.0"
 pyjwt = "^2.8.0"
 cryptography = "^42.0.5"
+pydantic = "^2.6.4"
+pydantic-settings = "^2.2.1"
+flake8 = "^7.0.0"
+isort = "^5.13.2"
+celery = {extras = ["redis"], version = "^5.3.6"}
 
 
 [build-system]
