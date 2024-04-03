@@ -1,12 +1,12 @@
 import asyncio
 from typing import List, Dict
 
-from celery_app.app import app
-from RCS.rcs import RCSBatchCapabilityTask, RCSDataForCheck
+from celery_app.app import celery_app
 from RCS.client import ApiClient
+from RCS.schema import RCSBatchCapabilityTask, RCSDataForCheck
 
 
-@app.task()
+@celery_app.task()
 def dummy(task_data: Dict) -> Dict:
     task_data = RCSBatchCapabilityTask(**task_data)
     task_id = task_data.task_id
@@ -25,5 +25,3 @@ async def make_request(api_client: ApiClient, data_for_check: List[RCSDataForChe
             results[data.country] = task
 
     return results
-
-

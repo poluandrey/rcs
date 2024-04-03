@@ -3,6 +3,8 @@ from typing import List
 
 import pandas as pd
 
+from RCS.schema import RCSDataForCheck
+
 
 @dataclass(frozen=True, slots=True)
 class CountryMsisdn:
@@ -20,22 +22,22 @@ class SummaryRecord:
 
 class ExcellReader:
 
-    def __init__(self, in_file: str):
+    def __init__(self, in_file):
         self.book = pd.read_excel(in_file, sheet_name=None)
 
-    def get_data_for_check(self) -> List[CountryMsisdn]:
-        self.book.pop('Devices', None)
+    def get_data_for_check(self) -> List[RCSDataForCheck]:
         sheet_names = self.book.keys()
         data = []
         for sheet_name in sheet_names:
-            country_msisdns = CountryMsisdn(country=sheet_name, msisdns=[])
+            msisdns = []
             df = self.book[sheet_name]
             for _, row in df.iterrows():
                 for _, phone in row.items():
                     if not str(phone).startswith('+'):
                         phone = f'+{phone}'
-                    country_msisdns.msisdns.append(phone)
-            data.append(country_msisdns)
+                    msisdns.append(phone)
+
+            data.append(RCSDataForCheck(country=sheet_name, msisdns=msisdns))
 
         return data
 

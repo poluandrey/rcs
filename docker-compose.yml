@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+#  web:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    ports:
+#      - "${HOST_PORT}:${APP_PORT}"  # Use APP_PORT from .env file
+#    depends_on:
+#      - database
+#    env_file:
+#      - .env
+#    networks:
+#      - network_storage
+#    links:
+#      - database
+#    volumes:
+#      - /etc/letsencrypt/archive/network-storage.ru/:/app/certs  # Mount SSL certificates from host
+#        # environment:
+#        # SSL_KEY_FILE: "/app/certs/privkey.pem"
+#        # SSL_CERT_FILE: "/app/certs/fullchain.pem"
+  database:
+    image: postgres:15-alpine
+    volumes:
+     - .volumes/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      interval: 10s
+      timeout: 1s
+      retries: 5
+    ports:
+      - 5432:5432
+    env_file:
+      - .env
+    networks:
+      - rcs-network
+
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+    networks:
+      - rcs-network
+networks:
+  rcs-network:
+    driver: bridge

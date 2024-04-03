@@ -1,4 +1,3 @@
-import asyncio
 import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -10,8 +9,8 @@ import httpx
 from google.oauth2 import service_account
 from httpx import Headers
 
-from config.settings import settings
-from RCS.rcs import RCSBatchCapabilityResponse
+from core.config import settings
+from RCS.schema import RCSBatchCapabilityResponse
 
 
 @dataclass
@@ -33,7 +32,7 @@ class Token:
         self.access_token = self.get_access_token_from_redis()
 
     def get_access_token_from_redis(self) -> Optional[str]:
-        with open('../token.json', 'r') as f:
+        with open('token.json', 'r') as f:
             token = json.load(f)
 
         if not token.get('access_token'):
@@ -49,7 +48,7 @@ class Token:
     def set_access_token_in_redis(cls, access_token: str, expires_in: int, token_type: str) -> None:
         expired_at = datetime.utcnow() + timedelta(seconds=expires_in)
 
-        with open('../token.json', 'w') as f:
+        with open('/Users/andrey/Documents/work/new_hlr_product_alarm/RCS/token.json', 'w') as f:
             token = {
                 'access_token': access_token,
                 'expired_at': mktime(expired_at.utctimetuple()),
@@ -153,25 +152,25 @@ class CustomAuthentication:
         return access_token
 
 
-async def main3():
-    start_time = datetime.now()
-    # token = Token()
-    # auth_client = CustomAuthentication(access_token=token.access_token)
-    api_client = ApiClient()
-    # auth_client.authenticate(api_client.client)
-    async with asyncio.TaskGroup() as tg:
-        task1 = tg.create_task(api_client.batch_rcs_capable(msisdns=['+447359388306']), name='uk')
-        task2 = tg.create_task(api_client.rcs_capable(msisdn='+79216503431'))
-        # task3 = tg.create_task(api_client.rcs_capable(URL))
-        # task4 = tg.create_task(api_client.rcs_capable(URL))
-        # task5 = tg.create_task(api_client.rcs_capable(URL))
-        # task6 = tg.create_task(api_client.rcs_capable(URL))
-        # task7 = tg.create_task(api_client.rcs_capable(URL))
-        # task8 = tg.create_task(api_client.rcs_capable(URL))
-    duration = datetime.now() - start_time
-    print(task1.result(), task1.get_name(), task2.result())
-    print(duration)
-
-
-if __name__ == '__main__':
-    asyncio.run(main3())
+# async def main3():
+#     start_time = datetime.now()
+#     # token = Token()
+#     # auth_client = CustomAuthentication(access_token=token.access_token)
+#     api_client = ApiClient()
+#     # auth_client.authenticate(api_client.client)
+#     async with asyncio.TaskGroup() as tg:
+#         task1 = tg.create_task(api_client.batch_rcs_capable(msisdns=['+447359388306']), name='uk')
+#         task2 = tg.create_task(api_client.rcs_capable(msisdn='+79216503431'))
+#         # task3 = tg.create_task(api_client.rcs_capable(URL))
+#         # task4 = tg.create_task(api_client.rcs_capable(URL))
+#         # task5 = tg.create_task(api_client.rcs_capable(URL))
+#         # task6 = tg.create_task(api_client.rcs_capable(URL))
+#         # task7 = tg.create_task(api_client.rcs_capable(URL))
+#         # task8 = tg.create_task(api_client.rcs_capable(URL))
+#     duration = datetime.now() - start_time
+#     print(task1.result(), task1.get_name(), task2.result())
+#     print(duration)
+#
+#
+# if __name__ == '__main__':
+#     asyncio.run(main3())
