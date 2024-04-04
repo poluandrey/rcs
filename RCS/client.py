@@ -103,7 +103,6 @@ class ApiClient:
             resp = await self.client.post('/users:batchGet', json=body)
 
         resp_data = resp.json()
-        print(resp_data)
         batch_resp = RCSBatchCapabilityResponse(**resp_data)
 
         return batch_resp
@@ -127,9 +126,7 @@ class CustomAuthentication:
     def obtain_token(self):
         assertion = self.credentials._make_authorization_grant_assertion()
         url = f'{self.authorize_url}?grant_type={self.jwt_grant_type}&assertion={assertion.decode("utf-8")}'
-        print(url)
         resp = self.auth_client.post(url)
-        print(resp.json())
         resp.raise_for_status()
         return resp.json()
 
@@ -150,27 +147,3 @@ class CustomAuthentication:
         client.headers = Headers({'Authorization': f'Bearer {access_token}'})
 
         return access_token
-
-
-# async def main3():
-#     start_time = datetime.now()
-#     # token = Token()
-#     # auth_client = CustomAuthentication(access_token=token.access_token)
-#     api_client = ApiClient()
-#     # auth_client.authenticate(api_client.client)
-#     async with asyncio.TaskGroup() as tg:
-#         task1 = tg.create_task(api_client.batch_rcs_capable(msisdns=['+447359388306']), name='uk')
-#         task2 = tg.create_task(api_client.rcs_capable(msisdn='+79216503431'))
-#         # task3 = tg.create_task(api_client.rcs_capable(URL))
-#         # task4 = tg.create_task(api_client.rcs_capable(URL))
-#         # task5 = tg.create_task(api_client.rcs_capable(URL))
-#         # task6 = tg.create_task(api_client.rcs_capable(URL))
-#         # task7 = tg.create_task(api_client.rcs_capable(URL))
-#         # task8 = tg.create_task(api_client.rcs_capable(URL))
-#     duration = datetime.now() - start_time
-#     print(task1.result(), task1.get_name(), task2.result())
-#     print(duration)
-#
-#
-# if __name__ == '__main__':
-#     asyncio.run(main3())

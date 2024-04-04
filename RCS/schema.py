@@ -15,5 +15,5 @@ class RCSDataForCheck(BaseModel):
 
 
 class RCSBatchCapabilityTask(BaseModel):
-    task_id: str
+    task_id: int
     data: List[RCSDataForCheck]

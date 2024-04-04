@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, UUID4
 
 
@@ -8,3 +10,9 @@ class BaseTask(BaseModel):
     class Config:
         orm_model = True
         from_attributes = True
+
+
+class BaseTaskResult(BaseModel):
+    task: int
+    country: str
+    msisdn: Optional[str] = None
