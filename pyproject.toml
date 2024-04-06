@@ -20,6 +20,7 @@ openpyxl = "^3.1.2"
 sqlalchemy = "^2.0.29"
 alembic = "^1.13.1"
 psycopg = "^3.1.18"
+aiofiles = "^23.2.1"
 
 
 [build-system]
