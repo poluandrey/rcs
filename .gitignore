@@ -3,6 +3,11 @@
 **/build/**
 **/dist/**
 **/*egg-info/**
-token.json
+RCS/token.json
 resources/
+.env
+.idea/
+token.json
+.volumes/
+static/
 
