@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     PATH_TO_SERVICE_ACCOUNT: str
     AGENT_ID: str
     JWT_GRANT_TYPE: str
+
+    REDIS_HOST: str
+    REDIS_PORT: int
     REDIS_URL: str
 
     @computed_field
