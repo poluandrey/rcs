@@ -35,6 +35,7 @@ class ExcellReader:
                 for _, phone in row.items():
                     if not str(phone).startswith('+'):
                         phone = f'+{phone}'
+
                     msisdns.append(phone)
 
             data.append(RCSDataForCheck(country=sheet_name, msisdns=msisdns))

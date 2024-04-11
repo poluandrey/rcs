@@ -21,7 +21,16 @@ sqlalchemy = "^2.0.29"
 alembic = "^1.13.1"
 psycopg = "^3.1.18"
 aiofiles = "^23.2.1"
+asyncpg = "^0.29.0"
+redis = "^5.0.3"
 
+
+[tool.poetry.group.test.dependencies]
+flake8 = "^7.0.0"
+isort = "^5.13.2"
+flake8-async = "^24.4.1"
+flake8-clean-block = "^0.1.2"
+flake8-fastapi = "^0.7.0"
 
 [build-system]
 requires = ["poetry-core"]

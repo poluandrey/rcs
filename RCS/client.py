@@ -10,6 +10,7 @@ from google.oauth2 import service_account
 from httpx import Headers
 
 from core.config import settings
+from core.redis_client import client as redis_client
 from RCS.schema import RCSBatchCapabilityResponse
 
 
@@ -32,12 +33,12 @@ class Token:
         self.access_token = self.get_access_token_from_redis()
 
     def get_access_token_from_redis(self) -> Optional[str]:
-        with open('token.json', 'r') as f:
-            token = json.load(f)
-
-        if not token.get('access_token'):
+        # with open('token.json', 'r') as f:
+        #     token = json.load(f)
+        token = redis_client.get('access_token')
+        if not token:
             return None
-
+        token = json.loads(token)
         now = datetime.utcnow()
         if token['expired_at'] < mktime(now.utctimetuple()):
             return None
@@ -47,14 +48,12 @@ class Token:
     @classmethod
     def set_access_token_in_redis(cls, access_token: str, expires_in: int, token_type: str) -> None:
         expired_at = datetime.utcnow() + timedelta(seconds=expires_in)
-
-        with open('/Users/andrey/Documents/work/new_hlr_product_alarm/RCS/token.json', 'w') as f:
-            token = {
-                'access_token': access_token,
-                'expired_at': mktime(expired_at.utctimetuple()),
-                'type': token_type,
-            }
-            json.dump(token, f)
+        token = {
+            'access_token': access_token,
+            'expired_at': mktime(expired_at.utctimetuple()),
+            'type': token_type,
+        }
+        redis_client.set('access_token', json.dumps(token))
 
 
 class ApiClient:
@@ -62,7 +61,7 @@ class ApiClient:
     def __init__(self):
         self.client = httpx.AsyncClient(base_url=settings.RBM_BASE_ENDPOINT)
         self.agent_id = settings.AGENT_ID
-        self.authenticate()
+        # self.authenticate()
 
     async def rcs_capable(self, msisdn: str) -> bool:
         """
@@ -144,6 +143,7 @@ class CustomAuthentication:
                 token_type=token['token_type'],
             )
             access_token = token['access_token']
+
         client.headers = Headers({'Authorization': f'Bearer {access_token}'})
 
         return access_token

@@ -1,39 +1,41 @@
 import asyncio
-from typing import List, Dict
+from typing import List
 
-from sqlalchemy import insert, select
 
 from celery_app.app import celery_app
+from core.database import AsyncSessionLocal
+from model.task import TaskResult
 from RCS.client import ApiClient
 from RCS.schema import RCSBatchCapabilityTask, RCSDataForCheck
-from depends import get_db
-from model.task import TaskResult, Task
-from schema.task import BaseTaskResult
 from utils.excell import ExcellReader
 
 
+async def save_task_result(task_results):
+    async with AsyncSessionLocal() as async_session:
+        async_session.add_all(task_results)
+        await async_session.commit()
+
+
 @celery_app.task()
-def rcs_bulk_check(task_id) -> Dict:
-    session = next(get_db())
-    task = session.get(Task, task_id)
-    reader = ExcellReader(task.file)
+def rcs_bulk_check(task_id, task_file):
+    reader = ExcellReader(task_file)
     data = reader.get_data_for_check()
     task_data = RCSBatchCapabilityTask(task_id=task_id, data=data)
     api_client = ApiClient()
+    api_client.authenticate()
     loop = asyncio.get_event_loop()
     results = loop.run_until_complete(make_request(api_client, task_data.data))
     task_results = []
 
     for country, coro_res in results.items():
-        batch_request = coro_res.result()
-        msisdns = batch_request.reachableUsers
+        batch_response = coro_res.result()
+        msisdns = batch_response.reachableUsers
         if msisdns:
-            task_results.extend([BaseTaskResult(task=task_id, country=country, msisdn=msisdn) for msisdn in msisdns])
+            task_results.extend([TaskResult(task=task_id, country=country, msisdn=msisdn) for msisdn in msisdns])
         else:
-            task_results.append(BaseTaskResult(task=task_id, country=country, ))
+            task_results.append(TaskResult(task=task_id, country=country))
 
-    session.execute(insert(TaskResult), task_results)
-    session.commit()
+    loop.run_until_complete(save_task_result(task_results))
 
 
 async def make_request(api_client: ApiClient, data_for_check: List[RCSDataForCheck]):

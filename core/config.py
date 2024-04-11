@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:  # ignore
         return str(PostgresDsn.build(
-            scheme='postgresql+psycopg',
+            scheme='postgresql+asyncpg',
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PASSWORD,
             host=self.POSTGRES_SERVER,
@@ -39,4 +39,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-
