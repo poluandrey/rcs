@@ -18,13 +18,23 @@ class Settings(BaseSettings):
     PATH_TO_SERVICE_ACCOUNT: str
     AGENT_ID: str
     JWT_GRANT_TYPE: str
+
+    REDIS_HOST: str
+    REDIS_PORT: int
     REDIS_URL: str
+
+    STATIC_DIR: str
+
+    @computed_field
+    @property
+    def STATIC_PATH(self) -> Path:
+        return BASE_DIR.joinpath(self.STATIC_DIR)
 
     @computed_field
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:  # ignore
         return str(PostgresDsn.build(
-            scheme='postgresql+psycopg',
+            scheme='postgresql+asyncpg',
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PASSWORD,
             host=self.POSTGRES_SERVER,
@@ -39,4 +49,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-
