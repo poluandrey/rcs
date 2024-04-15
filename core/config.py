@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     REDIS_PORT: int
     REDIS_URL: str
 
+    STATIC_DIR: str
+
+    @computed_field
+    @property
+    def STATIC_PATH(self) -> Path:
+        return BASE_DIR.joinpath(self.STATIC_DIR)
+
     @computed_field
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:  # ignore

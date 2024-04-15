@@ -38,6 +38,7 @@ class Token:
         token = redis_client.get('access_token')
         if not token:
             return None
+
         token = json.loads(token)
         now = datetime.utcnow()
         if token['expired_at'] < mktime(now.utctimetuple()):

@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import joinedload
 
+from core.config import settings
 from model.task import Task, TaskResult
 from task.rcs import rcs_bulk_check
 
@@ -26,7 +27,7 @@ async def task_create(session: async_sessionmaker, file):
         await async_session.commit()
         await async_session.refresh(task)
 
-    async with aiofiles.open(task.file, 'wb') as out_file:
+    async with aiofiles.open(settings.STATIC_PATH.joinpath('tasks').joinpath(task.file), 'wb') as out_file:
         content = await file.read()  # async read
         await out_file.write(content)  # async write
 
@@ -61,3 +62,13 @@ async def task_capable_msisdns(session: async_sessionmaker, task_id: int, countr
                 msisdns.append(result.msisdn)
 
     return msisdns
+
+
+async def get_task_result_file(session: async_sessionmaker, task_id: id):
+    async with session() as async_session:
+        task = await async_session.get(Task, task_id)
+
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='task not found')
+
+    return settings.STATIC_PATH.joinpath('tasks', 'results', f'{task.name}.xlsx')
