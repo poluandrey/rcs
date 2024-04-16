@@ -22,6 +22,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from model.task import BaseModel as TaskBase
+from model.user import BaseModel as UserBase
 
 target_metadata = TaskBase.metadata
 

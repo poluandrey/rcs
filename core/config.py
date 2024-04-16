@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     REDIS_URL: str
 
     STATIC_DIR: str
+    SECRET_KEY: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    ALGORITHM: str
 
     @computed_field
     @property

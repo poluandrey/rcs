@@ -3,13 +3,14 @@ from typing import List
 from fastapi import APIRouter, Depends, UploadFile
 from fastapi.responses import FileResponse
 
+from core.auth import security_schema
 from core.database import AsyncSession
 from CRUD.task import (get_task_result_file, task_capable_msisdns,
                        task_countries, task_create, task_get)
 from depends import get_params
 from schema.task import BaseTask
 
-router = APIRouter(prefix='/tasks')
+router = APIRouter(prefix='/tasks', dependencies=[Depends(security_schema)])
 
 
 @router.get(path='/', response_model=List[BaseTask])
