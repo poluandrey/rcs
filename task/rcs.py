@@ -9,8 +9,8 @@ from celery_app.app import celery_app
 from core.config import settings
 from core.database import AsyncSessionLocal
 from model.task import TaskResult
-from RCS.client import ApiClient
-from RCS.schema import RCSBatchCapabilityTask, RCSDataForCheck
+from RCS.google.client import ApiClient
+from RCS.google.schema import RCSBatchCapabilityTask, RCSDataForCheck
 from utils.excell import ExcellReader
 
 

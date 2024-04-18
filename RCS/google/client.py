@@ -11,7 +11,7 @@ from httpx import Headers
 
 from core.config import settings
 from core.redis_client import client as redis_client
-from RCS.schema import RCSBatchCapabilityResponse
+from RCS.google.schema import RCSBatchCapabilityResponse
 
 
 @dataclass
@@ -33,8 +33,6 @@ class Token:
         self.access_token = self.get_access_token_from_redis()
 
     def get_access_token_from_redis(self) -> Optional[str]:
-        # with open('token.json', 'r') as f:
-        #     token = json.load(f)
         token = redis_client.get('access_token')
         if not token:
             return None
@@ -60,8 +58,8 @@ class Token:
 class ApiClient:
 
     def __init__(self):
-        self.client = httpx.AsyncClient(base_url=settings.RBM_BASE_ENDPOINT)
-        self.agent_id = settings.AGENT_ID
+        self.client = httpx.AsyncClient(base_url=settings.GOOGLE_RBM_BASE_ENDPOINT)
+        self.agent_id = settings.GOOGLE_AGENT_ID
         # self.authenticate()
 
     async def rcs_capable(self, msisdn: str) -> bool:
@@ -117,11 +115,11 @@ class CustomAuthentication:
     authorize_url = 'https://oauth2.googleapis.com/token'
 
     def __init__(self, access_token: Optional[str]):
-        credentials = service_account.Credentials.from_service_account_file(settings.PATH_TO_SERVICE_ACCOUNT)
-        self.credentials = credentials.with_scopes([settings.SCOPES])
+        credentials = service_account.Credentials.from_service_account_file(settings.GOOGLE_PATH_TO_SERVICE_ACCOUNT)
+        self.credentials = credentials.with_scopes([settings.GOOGLE_SCOPES])
         self.credentials.token = access_token
         self.auth_client = httpx.Client()
-        self.jwt_grant_type = settings.JWT_GRANT_TYPE
+        self.jwt_grant_type = settings.GOOGLE_JWT_GRANT_TYPE
 
     def obtain_token(self):
         assertion = self.credentials._make_authorization_grant_assertion()
