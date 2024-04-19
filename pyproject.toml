@@ -23,6 +23,9 @@ psycopg = "^3.1.18"
 aiofiles = "^23.2.1"
 asyncpg = "^0.29.0"
 redis = "^5.0.3"
+passlib = "^1.7.4"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+bcrypt = "^4.1.2"
 
 
 [tool.poetry.group.test.dependencies]

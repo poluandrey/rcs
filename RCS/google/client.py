@@ -11,7 +11,8 @@ from httpx import Headers
 
 from core.config import settings
 from core.redis_client import client as redis_client
-from RCS.schema import RCSBatchCapabilityResponse
+from RCS.google.schema import RCSBatchCapabilityResponse, SuccessfulCapabilityResponse, FailedCapabilityResponse
+from RCS.schema import RCSCapabilityResponse as ServiceCapabilityResponse
 
 
 @dataclass
@@ -33,8 +34,6 @@ class Token:
         self.access_token = self.get_access_token_from_redis()
 
     def get_access_token_from_redis(self) -> Optional[str]:
-        # with open('token.json', 'r') as f:
-        #     token = json.load(f)
         token = redis_client.get('access_token')
         if not token:
             return None
@@ -60,11 +59,10 @@ class Token:
 class ApiClient:
 
     def __init__(self):
-        self.client = httpx.AsyncClient(base_url=settings.RBM_BASE_ENDPOINT)
-        self.agent_id = settings.AGENT_ID
-        # self.authenticate()
+        self.client = httpx.AsyncClient(base_url=settings.GOOGLE_RBM_BASE_ENDPOINT)
+        self.agent_id = settings.GOOGLE_AGENT_ID
 
-    async def rcs_capable(self, msisdn: str) -> bool:
+    async def rcs_capable(self, msisdn: str) -> ServiceCapabilityResponse:
         """
         Make RCS capable request for number
         :param msisdn: phone number in e.164 format
@@ -73,16 +71,21 @@ class ApiClient:
         uuid = str(uuid4())
 
         params = [('requestId', uuid), ('agentId', self.agent_id)]
-        resp = await self.client.get(url=f'/phones/{msisdn}/capabilities', params=params)
+        resp = await self.client.get(url=f'/phones/+{msisdn}/capabilities', params=params)
 
         if resp.status_code == httpx.codes.UNAUTHORIZED:
             auth_client = CustomAuthentication(access_token=None)
             auth_client.authenticate(self.client)
-            resp = await self.client.get(url=f'/phones/{msisdn}/capabilities', params=params)
+            resp = await self.client.get(url=f'/phones/+{msisdn}/capabilities', params=params)
 
-        return True if resp.status_code == httpx.codes.OK else False
+        is_capable = True if resp.status_code == httpx.codes.OK else False
+        raw_response = SuccessfulCapabilityResponse(**resp.json()) if resp.status_code == httpx.codes.OK \
+            else FailedCapabilityResponse(**resp.json())
 
-    async def batch_rcs_capable(self, msisdns: List[str]) -> RCSBatchCapabilityResponse:
+        return ServiceCapabilityResponse(rcs_enable=is_capable,
+                                         raw_response=raw_response)
+
+    async def batch_capable(self, msisdns: List[str]) -> RCSBatchCapabilityResponse:
         """
         Gets the RCS-enabled phone numbers for a list of users.
         The returned payload contains a list of RCS-enabled phone numbers reachable by the RBM platform for the
@@ -117,11 +120,11 @@ class CustomAuthentication:
     authorize_url = 'https://oauth2.googleapis.com/token'
 
     def __init__(self, access_token: Optional[str]):
-        credentials = service_account.Credentials.from_service_account_file(settings.PATH_TO_SERVICE_ACCOUNT)
-        self.credentials = credentials.with_scopes([settings.SCOPES])
+        credentials = service_account.Credentials.from_service_account_file(settings.GOOGLE_PATH_TO_SERVICE_ACCOUNT)
+        self.credentials = credentials.with_scopes([settings.GOOGLE_SCOPES])
         self.credentials.token = access_token
         self.auth_client = httpx.Client()
-        self.jwt_grant_type = settings.JWT_GRANT_TYPE
+        self.jwt_grant_type = settings.GOOGLE_JWT_GRANT_TYPE
 
     def obtain_token(self):
         assertion = self.credentials._make_authorization_grant_assertion()
@@ -132,11 +135,9 @@ class CustomAuthentication:
 
     def authenticate(self, client: httpx.AsyncClient):
         if self.credentials.valid:
-            print('use token from redis')
             access_token = self.credentials.token
 
         else:
-            print('obtain token')
             token = self.obtain_token()
             Token.set_access_token_in_redis(
                 access_token=token['access_token'],

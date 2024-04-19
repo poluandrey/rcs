@@ -1,19 +1,16 @@
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
-
-class RCSBatchCapabilityResponse(BaseModel):
-    reachableUsers: Optional[List[str]] = None
-    totalRandomSampleUserCount: Optional[int] = None
-    reachableRandomSampleUserCount: Optional[int] = None
+from RCS.google import schema as google_resp_schema
+from RCS.sinch import schema as sinch_resp_schema
 
 
-class RCSDataForCheck(BaseModel):
-    country: str
-    msisdns: List[str]
-
-
-class RCSBatchCapabilityTask(BaseModel):
-    task_id: int
-    data: List[RCSDataForCheck]
+class RCSCapabilityResponse(BaseModel):
+    rcs_enable: bool
+    raw_response: Optional[
+        google_resp_schema.SuccessfulCapabilityResponse |
+        google_resp_schema.FailedCapabilityResponse |
+        sinch_resp_schema.SuccessfulCapableResponse |
+        sinch_resp_schema.FailedCapabilityResponse
+        ] = None

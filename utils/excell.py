@@ -3,7 +3,7 @@ from typing import List
 
 import pandas as pd
 
-from RCS.schema import RCSDataForCheck
+from RCS.google.schema import RCSDataForCheck
 
 
 @dataclass(frozen=True, slots=True)
