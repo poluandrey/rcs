@@ -13,7 +13,7 @@ class MAAPCapabilitiesItem(Enum):
     chatBotCommunication = auto()
 
 
-class RcsCapableResponse(BaseModel):
+class SuccessfulCapableResponse(BaseModel):
     rcs_enabled: bool
     at: str
     msisdn: str
@@ -22,5 +22,5 @@ class RcsCapableResponse(BaseModel):
     capabilities: List[MAAPCapabilitiesItem]
 
 
-class RcsErrorResponse(BaseModel):
+class FailedCapabilityResponse(BaseModel):
     error: str

@@ -1,20 +1,25 @@
+import httpx
 from httpx import AsyncClient, Headers, codes
 
 from core.config import settings
-from RCS.sinch.schema import RcsErrorResponse, RcsCapableResponse
+from RCS.sinch.schema import FailedCapabilityResponse, SuccessfulCapableResponse
+from RCS.schema import RCSCapabilityResponse as ServiceCapabilityResponse
 
 
 class ApiClient:
 
-    def __init__(self):
+    def __init__(self, bot_id: str):
+        self.bot_id = bot_id
         self.auth_header = Headers({'Authorization': f'Bearer {settings.SINCH_YOLLA_API_TOKEN}'})
         self.client = AsyncClient(headers=self.auth_header, base_url=settings.SINCH_BASE_ENDPOINT)
 
-    async def rcs_capable(self, msisdn: str, bot_id: str):
+    async def rcs_capable(self, msisdn: str):
         params = {'msisdn': msisdn}
-        resp = await self.client.get(url=f'{bot_id}/capabilities', params=params)
+        async with self.client as async_client:
+            resp = await async_client.get(url=f'{self.bot_id}/capabilities', params=params)
 
-        if resp.status_code in [codes.NOT_FOUND, codes.INTERNAL_SERVER_ERROR]:
-            return RcsErrorResponse(**resp.json())
+        is_capable = True if resp.status_code == codes.OK else False
+        raw_resp = SuccessfulCapableResponse(**resp.json()) if resp.status_code == httpx.codes.OK \
+            else FailedCapabilityResponse(**resp.json())
 
-        return RcsCapableResponse(**resp.json())
+        return ServiceCapabilityResponse(rcs_enable=is_capable, raw_response=raw_resp)

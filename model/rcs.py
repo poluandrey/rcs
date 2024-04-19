@@ -1,26 +1,31 @@
-from enum import Enum, auto
+from enum import Enum
+from typing import List
+
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 
 from core.database import BaseModel
-from RCS.google.client import ApiClient as GoogleApiClient
-from RCS.sinch.client import ApiClient as SinchApiClient
 
 
 class RCSBot(Enum):
-    YollaGoogle = auto()
-    YollaSinch = auto()
+    YollaGoogle = 'YollaGoogle'
+    YollaSinch = 'YollaSinch'
+
+
+class RCSBotAction(Enum):
+    capability = 'capability'
+    batchCapability = 'batchCapability'
+
+
+def get_bot_methods(bot: RCSBot) -> List[RCSBotAction]:
+    match bot:
+        case bot.YollaSinch:
+            return [RCSBotAction.capability, RCSBotAction.batchCapability]
+        case bot.YollaGoogle:
+            return [RCSBotAction.capability, RCSBotAction.batchCapability]
 
 
 class Bot(BaseModel):
     __tablename__ = 'rcs_bot'
 
     bot = Column(PgEnum(RCSBot), unique=False, nullable=False)
-
-    def get_api_client(self):
-        match self.bot:
-            case RCSBot.YollaGoogle:
-                return GoogleApiClient()
-
-            case RCSBot.YollaSinch:
-                return SinchApiClient()

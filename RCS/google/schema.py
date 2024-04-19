@@ -1,6 +1,14 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from pydantic import BaseModel
+
+
+class SuccessfulCapabilityResponse(BaseModel):
+    features: List[str]
+
+
+class FailedCapabilityResponse(BaseModel):
+    error: Dict[str, str | int]
 
 
 class RCSBatchCapabilityResponse(BaseModel):

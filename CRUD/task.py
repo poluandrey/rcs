@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import joinedload
 
 from core.config import settings
+from model.rcs import RCSBot
 from model.task import Task, TaskResult
 from task.rcs import rcs_bulk_check
 
@@ -18,7 +19,7 @@ async def task_get(session: async_sessionmaker, limit, offset):
             yield row
 
 
-async def task_create(session: async_sessionmaker, file):
+async def task_create(session: async_sessionmaker, file, bot: RCSBot):
     uuid = str(uuid4())
     async with session() as async_session:
         task = Task(name=uuid)
@@ -28,10 +29,10 @@ async def task_create(session: async_sessionmaker, file):
         await async_session.refresh(task)
 
     async with aiofiles.open(settings.STATIC_PATH.joinpath('tasks').joinpath(task.file), 'wb') as out_file:
-        content = await file.read()  # async read
-        await out_file.write(content)  # async write
+        content = await file.read()
+        await out_file.write(content)
 
-    rcs_bulk_check.delay(task.id, task.file)
+    rcs_bulk_check.delay(task.id, task.file, bot.name)
     return task
 
 
