@@ -15,8 +15,7 @@ class ApiClient:
 
     async def rcs_capable(self, msisdn: str):
         params = {'msisdn': msisdn}
-        async with self.client as async_client:
-            resp = await async_client.get(url=f'{self.bot_id}/capabilities', params=params)
+        resp = await self.client.get(url=f'{self.bot_id}/capabilities', params=params)
 
         is_capable = True if resp.status_code == codes.OK else False
         raw_resp = SuccessfulCapableResponse(**resp.json()) if resp.status_code == httpx.codes.OK \

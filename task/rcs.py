@@ -90,5 +90,5 @@ async def make_request(bot: YollaGoogleBot | YollaSinchBot, data_for_check: List
         for data in data_for_check:
             task = tg.create_task(bot.batch_capability(data.msisdns))
             results[data.country] = task
-
+    print(results)
     return results
