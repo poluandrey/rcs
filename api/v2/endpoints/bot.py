@@ -49,7 +49,6 @@ async def bot_capability(bot: RCSBot, phone_number: Optional[str] = None):
 async def bot_batch_capability(bot: RCSBot, file: UploadFile, session: AsyncSession):
     if RCSBotAction.batchCapability not in get_bot_methods(bot):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='action not implemented')
+
     task = await task_create(session, file, bot)
     return task
-
-

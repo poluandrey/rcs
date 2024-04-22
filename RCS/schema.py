@@ -7,7 +7,9 @@ from RCS.sinch import schema as sinch_resp_schema
 
 
 class RCSCapabilityResponse(BaseModel):
+    msisdn: str
     rcs_enable: bool
+    country: str
     raw_response: Optional[
         google_resp_schema.SuccessfulCapabilityResponse |
         google_resp_schema.FailedCapabilityResponse |
