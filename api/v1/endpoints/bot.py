@@ -3,12 +3,12 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, status, UploadFile
 
 from CRUD.task import task_create
-from bot import YollaGoogleBot, YollaSinchBot
+from bot import YollaGoogleBot, YollaSinchBot, get_bot_client
 from core.config import settings
 from schema.bot import BotBase
 from schema.task import BaseTask
 from core.database import AsyncSession
-from model.rcs import RCSBot, RCSBotAction, get_bot_methods
+from model.bot import RCSBot, RCSBotAction, get_bot_methods
 from RCS.google.client import ApiClient as GoogleApiClient
 from RCS.sinch.client import ApiClient as SinchApiClient
 from CRUD.bot import bot_get
@@ -32,16 +32,8 @@ async def bot_capability(bot: RCSBot, phone_number: Optional[str] = None):
     if RCSBotAction.capability not in get_bot_methods(bot):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='action not implemented')
 
-    match bot:
-        case bot.YollaGoogle:
-            api_client = GoogleApiClient()
-            api_client.authenticate()
-            bot = YollaGoogleBot(api_client)
-        case bot.YollaSinch:
-            api_client = SinchApiClient(bot_id=settings.SINCH_YOLLA_SENDER_ID)
-            bot = YollaSinchBot(api_client)
-
-    capability_resp = await bot.capability(phone_number=phone_number)
+    bot_client = get_bot_client(bot)
+    capability_resp = await bot_client.capability(phone_number=phone_number)
     return capability_resp
 
 

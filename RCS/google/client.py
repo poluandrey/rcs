@@ -1,3 +1,4 @@
+"""Google api client"""
 import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -7,11 +8,11 @@ from uuid import uuid4
 
 import httpx
 from google.oauth2 import service_account
-from httpx import Headers
+from aiohttp import ClientSession, TCPConnector
 
 from core.config import settings
 from core.redis_client import client as redis_client
-from RCS.google.schema import RCSBatchCapabilityResponse, SuccessfulCapabilityResponse, FailedCapabilityResponse
+from RCS.google.schema import SuccessfulCapabilityResponse, FailedCapabilityResponse, RCSBatchCapabilityResponse
 from RCS.schema import RCSCapabilityResponse as ServiceCapabilityResponse
 
 
@@ -59,30 +60,37 @@ class Token:
 class ApiClient:
 
     def __init__(self):
-        self.client = httpx.AsyncClient(base_url=settings.GOOGLE_RBM_BASE_ENDPOINT)
+        self.session = ClientSession(
+            base_url=settings.GOOGLE_RBM_BASE_ENDPOINT,
+            connector=TCPConnector(verify_ssl=False, use_dns_cache=True)
+        )
         self.agent_id = settings.GOOGLE_AGENT_ID
 
-    async def rcs_capable(self, msisdn: str) -> ServiceCapabilityResponse:
+    async def rcs_capable(self, msisdn: str, country: str = 'undefined') -> ServiceCapabilityResponse:
         """
         Make RCS capable request for number
+        :param country:
         :param msisdn: phone number in e.164 format
         :return: True if number is RCS capable, else False
         """
         uuid = str(uuid4())
-
         params = [('requestId', uuid), ('agentId', self.agent_id)]
-        resp = await self.client.get(url=f'/phones/+{msisdn}/capabilities', params=params)
 
-        if resp.status_code == httpx.codes.UNAUTHORIZED:
-            auth_client = CustomAuthentication(access_token=None)
-            auth_client.authenticate(self.client)
-            resp = await self.client.get(url=f'/phones/+{msisdn}/capabilities', params=params)
+        async with self.session.get(url=f'/v1/phones/{msisdn}/capabilities', params=params) as resp:
+            resp_json = await resp.json()
 
-        is_capable = True if resp.status_code == httpx.codes.OK else False
-        raw_response = SuccessfulCapabilityResponse(**resp.json()) if resp.status_code == httpx.codes.OK \
-            else FailedCapabilityResponse(**resp.json())
+            if resp.status == 401:
+                auth_client = CustomAuthentication(access_token=None)
+                auth_client.authenticate(self.session)
+                resp_json = await resp.json()
+
+        is_capable = True if resp.status == 200 else False
+        raw_response = SuccessfulCapabilityResponse(**resp_json) if resp.status == 200 \
+            else FailedCapabilityResponse(**resp_json)
 
         return ServiceCapabilityResponse(rcs_enable=is_capable,
+                                         phone_number=msisdn,
+                                         country=country,
                                          raw_response=raw_response)
 
     async def batch_capable(self, msisdns: List[str]) -> RCSBatchCapabilityResponse:
@@ -93,27 +101,31 @@ class ApiClient:
         The returned payload also contains values that can be used to estimate the potential reach of a list of phone
         numbers regardless of the launch status of the agent.
         :param msisdns: List of phone numbers in e.164 format
+        :param country: Country for which send capability requests
         :return: RCSBatchCapabilityResponse instance
         """
         body = {
             'users': msisdns,
             'agentId': self.agent_id,
         }
-        resp = await self.client.post('/users:batchGet', json=body)
-        if resp.status_code == httpx.codes.UNAUTHORIZED:
-            auth_client = CustomAuthentication(access_token=None)
-            auth_client.authenticate(self.client)
-            resp = await self.client.post('/users:batchGet', json=body)
+        async with self.session.post('/v1/users:batchGet', json=body) as resp:
+            if resp.status == 401:
+                auth_client = CustomAuthentication(access_token=None)
+                auth_client.authenticate(self.session)
 
-        resp_data = resp.json()
-        batch_resp = RCSBatchCapabilityResponse(**resp_data)
+                async with self.session.post('/users:batchGet', json=body) as resp:
+                    resp_data = await resp.json()
+                    return RCSBatchCapabilityResponse(**resp_data)
 
-        return batch_resp
+            resp_data = await resp.json()
+            print(resp_data)
+
+            return RCSBatchCapabilityResponse(**resp_data)
 
     def authenticate(self):
         token = Token()
         auth_client = CustomAuthentication(access_token=token.access_token)
-        auth_client.authenticate(self.client)
+        auth_client.authenticate(self.session)
 
 
 class CustomAuthentication:
@@ -133,7 +145,7 @@ class CustomAuthentication:
         resp.raise_for_status()
         return resp.json()
 
-    def authenticate(self, client: httpx.AsyncClient):
+    def authenticate(self, session: ClientSession):
         if self.credentials.valid:
             access_token = self.credentials.token
 
@@ -146,6 +158,6 @@ class CustomAuthentication:
             )
             access_token = token['access_token']
 
-        client.headers = Headers({'Authorization': f'Bearer {access_token}'})
+        session.headers.extend({'Authorization': f'Bearer {access_token}'})
 
         return access_token

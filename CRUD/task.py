@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import joinedload
 
 from core.config import settings
-from model.rcs import RCSBot
+from model.bot import RCSBot
 from model.task import Task, TaskResult
 from task.rcs import rcs_bulk_check
 

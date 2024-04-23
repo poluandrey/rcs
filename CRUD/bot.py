@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from model.rcs import Bot
+from model.bot import Bot
 
 
 async def bot_get(session):

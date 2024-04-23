@@ -4,16 +4,13 @@ from typing import List
 from openpyxl import Workbook
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
-from aiohttp import ClientSession, TCPConnector
 
-from RCS.google.client import ApiClient as GoogleApiClient
 from RCS.google.schema import RCSBatchCapabilityTask, RCSDataForCheck
-from RCS.sinch.client import ApiClient as SinchApiClient
-from bot import YollaGoogleBot, YollaSinchBot
+from bot import get_bot_client, BotClient
 from celery_app.app import celery_app
 from core.config import settings
 from core.database import AsyncSessionLocal
-from model.rcs import RCSBot
+from model.bot import RCSBot
 from model.task import TaskResult
 from utils.excell import ExcellReader
 
@@ -60,23 +57,11 @@ def rcs_bulk_check(task_id, task_file_name, bot_name: str):
     data = reader.get_data_for_check()
     task_data = RCSBatchCapabilityTask(task_id=task_id, data=data)
     bot = RCSBot[bot_name]
-    match bot:
-        case bot.YollaGoogle:
-            api_client = GoogleApiClient()
-            bot = YollaGoogleBot(api_client)
-        case bot.YollaSinch:
-            connector = TCPConnector(verify_ssl=False, use_dns_cache=True)
-            session = ClientSession(connector=connector, base_url=settings.SINCH_BASE_ENDPOINT)
-            api_client = SinchApiClient(
-                bot_id=settings.SINCH_YOLLA_SENDER_ID,
-                session=session,
-            )
-            bot = YollaSinchBot(api_client)
+    bot_client = get_bot_client(bot)
 
     loop = asyncio.get_event_loop()
-    results = loop.run_until_complete(make_request(bot, task_data.data))
+    results = loop.run_until_complete(make_request(bot_client, task_data.data))
     task_results = []
-    print(results)
     for country, msisdns in results.items():
         if msisdns:
             task_results.extend([TaskResult(task_id=task_id, country=country, msisdn=msisdn) for msisdn in msisdns])
@@ -87,9 +72,8 @@ def rcs_bulk_check(task_id, task_file_name, bot_name: str):
     loop.run_until_complete(write_task_result_file(task_id))
 
 
-async def make_request(bot: YollaGoogleBot | YollaSinchBot, data_for_check: List[RCSDataForCheck]):
+async def make_request(bot: BotClient, data_for_check: List[RCSDataForCheck]):
     tasks = []
-    response = {}
     for data in data_for_check:
         task = asyncio.create_task(bot.batch_capability(data.msisdns, country=data.country))
         tasks.append(task)
@@ -98,12 +82,16 @@ async def make_request(bot: YollaGoogleBot | YollaSinchBot, data_for_check: List
         task_result = await asyncio.gather(*tasks)
     finally:
         await bot.client.session.close()
+    return await parse_request(task_result)
+
+
+async def parse_request(task_result):
+    response = {}
     for result_group in task_result:
         for result in result_group:
             if result.rcs_enable:
                 if result.country not in response.keys():
-                    response[result.country] = [result.msisdn]
+                    response[result.country] = [result.phone_number]
                 else:
-                    response[result.country].append(result.msisdn)
+                    response[result.country].append(result.phone_number)
     return response
-
