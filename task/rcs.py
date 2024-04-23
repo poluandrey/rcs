@@ -5,12 +5,13 @@ from openpyxl import Workbook
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from RCS.google.schema import RCSBatchCapabilityTask, RCSDataForCheck
+from bot import get_bot_client, BotClient
 from celery_app.app import celery_app
 from core.config import settings
 from core.database import AsyncSessionLocal
+from model.bot import RCSBot
 from model.task import TaskResult
-from RCS.client import ApiClient
-from RCS.schema import RCSBatchCapabilityTask, RCSDataForCheck
 from utils.excell import ExcellReader
 
 
@@ -50,20 +51,18 @@ async def write_task_result_file(task_id):
 
 
 @celery_app.task()
-def rcs_bulk_check(task_id, task_file_name):
+def rcs_bulk_check(task_id, task_file_name, bot_name: str):
     task_file = settings.STATIC_PATH.joinpath('tasks').joinpath(task_file_name)
     reader = ExcellReader(task_file)
     data = reader.get_data_for_check()
     task_data = RCSBatchCapabilityTask(task_id=task_id, data=data)
-    api_client = ApiClient()
-    api_client.authenticate()
-    loop = asyncio.get_event_loop()
-    results = loop.run_until_complete(make_request(api_client, task_data.data))
-    task_results = []
+    bot = RCSBot[bot_name]
+    bot_client = get_bot_client(bot)
 
-    for country, coro_res in results.items():
-        batch_response = coro_res.result()
-        msisdns = batch_response.reachableUsers
+    loop = asyncio.get_event_loop()
+    results = loop.run_until_complete(make_request(bot_client, task_data.data))
+    task_results = []
+    for country, msisdns in results.items():
         if msisdns:
             task_results.extend([TaskResult(task_id=task_id, country=country, msisdn=msisdn) for msisdn in msisdns])
         else:
@@ -73,11 +72,28 @@ def rcs_bulk_check(task_id, task_file_name):
     loop.run_until_complete(write_task_result_file(task_id))
 
 
-async def make_request(api_client: ApiClient, data_for_check: List[RCSDataForCheck]):
-    results = {}
-    async with asyncio.TaskGroup() as tg:
-        for data in data_for_check:
-            task = tg.create_task(api_client.batch_rcs_capable(data.msisdns))
-            results[data.country] = task
+async def make_request(bot: BotClient, data_for_check: List[RCSDataForCheck]):
+    tasks = []
+    for data in data_for_check:
+        task = asyncio.create_task(bot.batch_capability(data.msisdns, country=data.country))
+        tasks.append(task)
 
-    return results
+    try:
+        task_result = await asyncio.gather(*tasks,)
+    finally:
+        await bot.client.session.close()
+
+    return await parse_request(task_result)
+
+
+async def parse_request(task_result):
+    response = {}
+    for result_group in task_result:
+        for result in result_group:
+            if result.rcs_enable:
+                if result.country not in response.keys():
+                    response[result.country] = [result.phone_number]
+                else:
+                    response[result.country].append(result.phone_number)
+
+    return response

@@ -1,19 +1,29 @@
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
-
-class RCSBatchCapabilityResponse(BaseModel):
-    reachableUsers: Optional[List[str]] = None
-    totalRandomSampleUserCount: Optional[int] = None
-    reachableRandomSampleUserCount: Optional[int] = None
+from RCS.google import schema as google_resp_schema
+from RCS.google.schema import RCSBatchCapabilityResponse
+from RCS.sinch import schema as sinch_resp_schema
 
 
-class RCSDataForCheck(BaseModel):
-    country: str
-    msisdns: List[str]
+class RCSCapabilityResponse(BaseModel):
+    phone_number: str
+    rcs_enable: bool
+    country: Optional[str] = None
+    raw_response: Optional[
+        google_resp_schema.SuccessfulCapabilityResponse |
+        google_resp_schema.FailedCapabilityResponse |
+        sinch_resp_schema.SuccessfulCapableResponse |
+        sinch_resp_schema.FailedCapabilityResponse |
+        RCSBatchCapabilityResponse
+        ] = None
 
-
-class RCSBatchCapabilityTask(BaseModel):
-    task_id: int
-    data: List[RCSDataForCheck]
+# пока не получаетя сделать протокол из за того что клиенты по разному инициализируются
+# class ApiClient(Protocol):
+#
+#     async def rcs_capable(self, phone_number: str, country='undefined') -> RCSCapabilityResponse:
+#         pass
+#
+#     async def batch_capable(self, phone_numbers, country) -> AsyncIterator[List[RCSCapabilityResponse]]:
+#         pass

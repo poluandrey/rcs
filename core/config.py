@@ -14,16 +14,24 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     POSTGRES_PORT: int
 
-    RBM_BASE_ENDPOINT: str
-    PATH_TO_SERVICE_ACCOUNT: str
-    AGENT_ID: str
-    JWT_GRANT_TYPE: str
+    GOOGLE_RBM_BASE_ENDPOINT: str
+    GOOGLE_PATH_TO_SERVICE_ACCOUNT: str
+    GOOGLE_AGENT_ID: str
+    GOOGLE_JWT_GRANT_TYPE: str
+    GOOGLE_SCOPES: str
+
+    SINCH_YOLLA_API_TOKEN: str
+    SINCH_YOLLA_SENDER_ID: str
+    SINCH_BASE_ENDPOINT: str
 
     REDIS_HOST: str
     REDIS_PORT: int
     REDIS_URL: str
 
     STATIC_DIR: str
+    SECRET_KEY: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    ALGORITHM: str
 
     @computed_field
     @property
