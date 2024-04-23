@@ -79,9 +79,10 @@ async def make_request(bot: BotClient, data_for_check: List[RCSDataForCheck]):
         tasks.append(task)
 
     try:
-        task_result = await asyncio.gather(*tasks)
+        task_result = await asyncio.gather(*tasks,)
     finally:
         await bot.client.session.close()
+
     return await parse_request(task_result)
 
 
@@ -94,4 +95,5 @@ async def parse_request(task_result):
                     response[result.country] = [result.phone_number]
                 else:
                     response[result.country].append(result.phone_number)
+
     return response

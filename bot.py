@@ -9,7 +9,7 @@ from model.bot import RCSBot
 
 class BotClient(Protocol):
 
-    def __init__(self, client: SinchApiClient|GoogleApiClient):
+    def __init__(self, client: SinchApiClient | GoogleApiClient):
         self.client = client
 
     async def batch_capability(self, phone_numbers: List[str], country: str) -> List[RCSCapabilityResponse]:
@@ -21,7 +21,7 @@ class BotClient(Protocol):
 
 class Client:
 
-    def __init__(self, client: SinchApiClient|GoogleApiClient):
+    def __init__(self, client: SinchApiClient | GoogleApiClient):
         self.client = client
 
 
@@ -36,7 +36,6 @@ class YollaSinchBot:
         phone_numbers = [phone.replace('+', '') if phone.startswith('+') else phone
                          for phone in phone_numbers]
         async for resp in self.client.batch_capable(phone_numbers=phone_numbers, country=country):
-            print('get first batch of respx')
             capable_phone_numbers.extend(resp)
 
         return capable_phone_numbers
@@ -46,6 +45,7 @@ class YollaSinchBot:
             capability = await self.client.rcs_capable(phone_number)
         finally:
             await self.client.session.close()
+
         return capability
 
 
@@ -73,6 +73,7 @@ class YollaGoogleBot:
                     rcs_enable=False,
                     country=country,
                     raw_response=batch_resp))
+
         return resp
 
     async def capability(self, phone_number: str) -> RCSCapabilityResponse:

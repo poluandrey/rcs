@@ -3,14 +3,11 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, status, UploadFile
 
 from CRUD.task import task_create
-from bot import YollaGoogleBot, YollaSinchBot, get_bot_client
-from core.config import settings
+from bot import get_bot_client
 from schema.bot import BotBase
 from schema.task import BaseTask
 from core.database import AsyncSession
 from model.bot import RCSBot, RCSBotAction, get_bot_methods
-from RCS.google.client import ApiClient as GoogleApiClient
-from RCS.sinch.client import ApiClient as SinchApiClient
 from CRUD.bot import bot_get
 
 router = APIRouter(prefix='/bot')
