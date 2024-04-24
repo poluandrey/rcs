@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
 from model.bot import RCSBot
+
 # from RCS.google.schema import
 
 

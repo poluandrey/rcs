@@ -1,10 +1,8 @@
 from typing import Annotated
-from passlib.context import CryptContext
 
-
-from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends
-
+from fastapi.security import OAuth2PasswordBearer
+from passlib.context import CryptContext
 
 security_schema = OAuth2PasswordBearer(tokenUrl='/v1/token')
 AuthRequiredDep = Annotated[str, Depends(security_schema)]

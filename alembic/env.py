@@ -17,13 +17,13 @@ config.set_main_option('sqlalchemy.url', settings.SQLALCHEMY_DATABASE_URI)
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+from model.bot import BaseModel as RCSBase
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from model.task import BaseModel as TaskBase
 from model.user import BaseModel as UserBase
-from model.bot import BaseModel as RCSBase
 
 target_metadata = TaskBase.metadata
 

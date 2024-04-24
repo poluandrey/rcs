@@ -1,14 +1,14 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, status, UploadFile
+from fastapi import APIRouter, HTTPException, UploadFile, status
 
-from CRUD.task import task_create
 from bot import get_bot_client
+from core.database import AsyncSession
+from CRUD.bot import bot_get
+from CRUD.task import task_create
+from model.bot import RCSBot, RCSBotAction, get_bot_methods
 from schema.bot import BotBase
 from schema.task import BaseTask
-from core.database import AsyncSession
-from model.bot import RCSBot, RCSBotAction, get_bot_methods
-from CRUD.bot import bot_get
 
 router = APIRouter(prefix='/bot')
 

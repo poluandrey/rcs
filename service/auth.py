@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
+from jose import jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
-
-from jose import jwt
 from starlette import status
 
 from core.config import settings

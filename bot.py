@@ -1,10 +1,10 @@
 from typing import List, Protocol
 
-from RCS.schema import RCSCapabilityResponse
-from RCS.sinch.client import ApiClient as SinchApiClient
-from RCS.google.client import ApiClient as GoogleApiClient
 from core.config import settings
 from model.bot import RCSBot
+from RCS.google.client import ApiClient as GoogleApiClient
+from RCS.schema import RCSCapabilityResponse
+from RCS.sinch.client import ApiClient as SinchApiClient
 
 
 class BotClient(Protocol):
@@ -35,6 +35,7 @@ class YollaSinchBot:
         capable_phone_numbers = []
         phone_numbers = [phone.replace('+', '') if phone.startswith('+') else phone
                          for phone in phone_numbers]
+        print(f'accept {len(phone_numbers)} phones for {country}')
         async for resp in self.client.batch_capable(phone_numbers=phone_numbers, country=country):
             capable_phone_numbers.extend(resp)
 

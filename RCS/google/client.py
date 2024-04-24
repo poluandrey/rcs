@@ -7,12 +7,14 @@ from typing import List, Optional
 from uuid import uuid4
 
 import httpx
-from google.oauth2 import service_account
 from aiohttp import ClientSession, TCPConnector
+from google.oauth2 import service_account
 
 from core.config import settings
 from core.redis_client import client as redis_client
-from RCS.google.schema import SuccessfulCapabilityResponse, FailedCapabilityResponse, RCSBatchCapabilityResponse
+from RCS.google.schema import (FailedCapabilityResponse,
+                               RCSBatchCapabilityResponse,
+                               SuccessfulCapabilityResponse)
 from RCS.schema import RCSCapabilityResponse as ServiceCapabilityResponse
 
 

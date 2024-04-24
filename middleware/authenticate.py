@@ -1,8 +1,8 @@
 from jose import JWTError, jwt
+from sqlalchemy import select
 from starlette.authentication import AuthenticationBackend, AuthenticationError
 from starlette.requests import Request
 from starlette.responses import Response
-from sqlalchemy import select
 
 from core.config import settings
 from core.database import AsyncSessionLocal

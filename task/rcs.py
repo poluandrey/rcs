@@ -1,17 +1,19 @@
 import asyncio
 from typing import List
 
+import uvloop
 from openpyxl import Workbook
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from RCS.google.schema import RCSBatchCapabilityTask, RCSDataForCheck
-from bot import get_bot_client, BotClient
+
+from bot import get_bot_client
 from celery_app.app import celery_app
 from core.config import settings
 from core.database import AsyncSessionLocal
 from model.bot import RCSBot
 from model.task import TaskResult
+from RCS.google.schema import RCSBatchCapabilityTask, RCSDataForCheck
 from utils.excell import ExcellReader
 
 
@@ -38,6 +40,7 @@ async def write_task_result_file(task_id):
         stmt = select(TaskResult).options(joinedload(TaskResult.task)).where(TaskResult.task_id == task_id)
         results = await async_session.scalars(stmt)
         task_results = results.all()
+
         task_name = task_results[0].task.name
         data = {}
         for result in task_results:
@@ -57,12 +60,13 @@ def rcs_bulk_check(task_id, task_file_name, bot_name: str):
     data = reader.get_data_for_check()
     task_data = RCSBatchCapabilityTask(task_id=task_id, data=data)
     bot = RCSBot[bot_name]
-    bot_client = get_bot_client(bot)
-
+    # loop = uvloop.new_event_loop()
+    # asyncio.set_event_loop(loop)
     loop = asyncio.get_event_loop()
-    results = loop.run_until_complete(make_request(bot_client, task_data.data))
+    results = loop.run_until_complete(make_request(bot, task_data.data))
     task_results = []
     for country, msisdns in results.items():
+        print(f'{country} with {len(msisdns)}')
         if msisdns:
             task_results.extend([TaskResult(task_id=task_id, country=country, msisdn=msisdn) for msisdn in msisdns])
         else:
@@ -72,16 +76,17 @@ def rcs_bulk_check(task_id, task_file_name, bot_name: str):
     loop.run_until_complete(write_task_result_file(task_id))
 
 
-async def make_request(bot: BotClient, data_for_check: List[RCSDataForCheck]):
+async def make_request(bot: RCSBot, data_for_check: List[RCSDataForCheck]):
     tasks = []
+    bot_client = get_bot_client(bot)
     for data in data_for_check:
-        task = asyncio.create_task(bot.batch_capability(data.msisdns, country=data.country))
+        task = asyncio.create_task(bot_client.batch_capability(data.msisdns, country=data.country))
         tasks.append(task)
 
     try:
-        task_result = await asyncio.gather(*tasks,)
+        task_result = await asyncio.gather(*tasks)
     finally:
-        await bot.client.session.close()
+        await bot_client.client.session.close()
 
     return await parse_request(task_result)
 
@@ -89,11 +94,13 @@ async def make_request(bot: BotClient, data_for_check: List[RCSDataForCheck]):
 async def parse_request(task_result):
     response = {}
     for result_group in task_result:
+        print(f'get responses for {len(result_group)} phones')
         for result in result_group:
-            if result.rcs_enable:
-                if result.country not in response.keys():
-                    response[result.country] = [result.phone_number]
-                else:
-                    response[result.country].append(result.phone_number)
+            if result.country not in response.keys() and result.rcs_enable:
+                response[result.country] = [result.phone_number]
+            elif result.country not in response.keys() and not result.rcs_enable:
+                response[result.country] = []
+            elif result.country in response.keys() and result.rcs_enable:
+                response[result.country].append(result.phone_number)
 
     return response
