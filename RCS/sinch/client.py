@@ -55,33 +55,33 @@ class ApiClient:
     #         yield batch_resp
 
     async def batch_capable(self, phone_numbers, country) -> AsyncIterator[List[ServiceCapabilityResponse]]:
-        async with asyncio.TaskGroup() as tg:
-            tasks_queue = [tg.create_task(self.rcs_capable(phone_number=phone, country=country)) for phone in phone_numbers]
-            print(f'create {len(tasks_queue)} tasks for {country}')
-            batch_tasks = []
-            while True:
-                print(f'{len(tasks_queue)} tasks in queue for {country}')
-                while tasks_queue:
-                    if len(batch_tasks) < BATCH_SIZE and tasks_queue:
-                        batch_tasks.append(tasks_queue.pop())
-                        continue
-                    break
-                if batch_tasks:
-                    print(f'send requests for {country}')
-                    start_time = datetime.now()
-                    done, pending = await asyncio.wait(batch_tasks, timeout=5)
-                    print(f'done: {len(done)}, pending: {len(pending)} for {country}')
-                    if pending:
-                        print(f'add {len(pending)} back to queue')
-                        tasks_queue.extend([task for task in pending])
-                    if done:
-                        result = [task.result() for task in done]
-                        print(
-                            f'finished {len(result)} requests for {country} in {datetime.now() - start_time}. pending: {len(pending)}'
-                        )
-                        yield result
-                    batch_tasks = []
-                if not tasks_queue:
-                    print('all tasks compleated')
-                    break
+        # async with asyncio.TaskGroup() as tg:
+        tasks_queue = [asyncio.create_task(self.rcs_capable(phone_number=phone, country=country)) for phone in phone_numbers]
+        print(f'create {len(tasks_queue)} tasks for {country}')
+        batch_tasks = []
+        while True:
+            print(f'{len(tasks_queue)} tasks in queue for {country}')
+            while tasks_queue:
+                if len(batch_tasks) < BATCH_SIZE and tasks_queue:
+                    batch_tasks.append(tasks_queue.pop())
+                    continue
+                break
+            if batch_tasks:
+                print(f'send requests for {country}')
+                start_time = datetime.now()
+                done, pending = await asyncio.wait(batch_tasks, timeout=5)
+                print(f'done: {len(done)}, pending: {len(pending)} for {country}')
+                if pending:
+                    print(f'add {len(pending)} back to queue')
+                    tasks_queue.extend([task for task in pending])
+                if done:
+                    result = [task.result() for task in done]
+                    print(
+                        f'finished {len(result)} requests for {country} in {datetime.now() - start_time}. pending: {len(pending)}'
+                    )
+                    yield result
+                batch_tasks = []
+            if not tasks_queue:
+                print('all tasks compleated')
+                break
 
