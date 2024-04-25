@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from datetime import datetime
 from typing import AsyncIterator, List
 
 from aiohttp import ClientSession, TCPConnector, ClientTimeout
@@ -12,7 +11,7 @@ from RCS.sinch.schema import (FailedCapabilityResponse,
 
 logging.getLogger('asyncio').setLevel(logging.WARNING)
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 500
 
 
 class ApiClient:
@@ -21,7 +20,7 @@ class ApiClient:
         self.bot_id = bot_id
         self.session: ClientSession = ClientSession(
             base_url=settings.SINCH_BASE_ENDPOINT,
-            connector=TCPConnector(verify_ssl=False, use_dns_cache=True, limit=200, force_close=True),
+            connector=TCPConnector(use_dns_cache=True, limit=0),
             timeout=ClientTimeout(total=None)
         )
         self.session.headers.extend({'Authorization': f'Bearer {settings.SINCH_YOLLA_API_TOKEN}'})
@@ -39,11 +38,11 @@ class ApiClient:
                 else FailedCapabilityResponse(**resp_json)
 
             return ServiceCapabilityResponse(
-                    phone_number=phone_number,
-                    country=country,
-                    rcs_enable=is_capable,
-                    raw_response=raw_resp
-                )
+                phone_number=phone_number,
+                country=country,
+                rcs_enable=is_capable,
+                raw_response=raw_resp
+            )
 
     # async def batch_capable_test(self, phone_numbers, country) -> AsyncIterator[List[ServiceCapabilityResponse]]:
     #     phones_batch = [phone_numbers[i:i + BATCH_SIZE] for i in range(0, len(phone_numbers), BATCH_SIZE)]
@@ -55,33 +54,37 @@ class ApiClient:
     #         yield batch_resp
 
     async def batch_capable(self, phone_numbers, country) -> AsyncIterator[List[ServiceCapabilityResponse]]:
-        # async with asyncio.TaskGroup() as tg:
-        tasks_queue = [asyncio.create_task(self.rcs_capable(phone_number=phone, country=country)) for phone in phone_numbers]
-        print(f'create {len(tasks_queue)} tasks for {country}')
+        all_data_for_check = [(phone, country) for phone in phone_numbers]
+        batch_data = []
         batch_tasks = []
-        while True:
-            print(f'{len(tasks_queue)} tasks in queue for {country}')
-            while tasks_queue:
-                if len(batch_tasks) < BATCH_SIZE and tasks_queue:
-                    batch_tasks.append(tasks_queue.pop())
+        flag = True
+        while flag:
+            # prepare batch of data
+            while all_data_for_check:
+                if len(batch_data) + len(batch_tasks) < BATCH_SIZE:
+                    batch_data.append(all_data_for_check.pop())
                     continue
                 break
-            if batch_tasks:
-                print(f'send requests for {country}')
-                start_time = datetime.now()
-                done, pending = await asyncio.wait(batch_tasks, timeout=5)
-                print(f'done: {len(done)}, pending: {len(pending)} for {country}')
-                if pending:
-                    print(f'add {len(pending)} back to queue')
-                    tasks_queue.extend([task for task in pending])
-                if done:
-                    result = [task.result() for task in done]
-                    print(
-                        f'finished {len(result)} requests for {country} in {datetime.now() - start_time}. pending: {len(pending)}'
-                    )
-                    yield result
+            if batch_data:
+                batch_tasks.extend(
+                    [
+                        asyncio.create_task(self.rcs_capable(phone_number=data[0], country=data[1])) for data in batch_data
+                    ]
+                )
+            print('send new requests')
+            done, pending = await asyncio.wait(batch_tasks, timeout=1)
+            print(f'done: {len(done)} pending: {len(pending)}')
+            if done:
+                result = [task.result() for task in done]
+                yield result
+            if pending:
+                batch_tasks = [task for task in pending]
+            else:
                 batch_tasks = []
-            if not tasks_queue:
-                print('all tasks compleated')
-                break
+
+            batch_data = []
+            print(f'{len(all_data_for_check)} requests did not send, {len(batch_tasks)} tasks in batch_tasks')
+            if not all_data_for_check and not batch_tasks:
+                flag = False
+
 

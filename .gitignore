@@ -10,4 +10,5 @@ resources/
 token.json
 .volumes/
 static/
+*.log
 

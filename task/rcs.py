@@ -77,14 +77,14 @@ def rcs_bulk_check(task_id, task_file_name, bot_name: str):
 
 
 async def make_request(bot: RCSBot, data_for_check: List[RCSDataForCheck]):
-    tasks = []
+    coroutines = []
     bot_client = get_bot_client(bot)
     for data in data_for_check:
-        task = asyncio.create_task(bot_client.batch_capability(data.msisdns, country=data.country))
-        tasks.append(task)
+        coroutine = bot_client.batch_capability(data.msisdns, country=data.country)
+        coroutines.append(coroutine)
 
     try:
-        task_result = await asyncio.gather(*tasks)
+        task_result = await asyncio.gather(*[asyncio.create_task(coroutine) for coroutine in coroutines])
     finally:
         await bot_client.client.session.close()
 
