@@ -1,7 +1,6 @@
 import asyncio
 from typing import List
 
-import uvloop
 from openpyxl import Workbook
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -60,8 +59,7 @@ def rcs_bulk_check(task_id, task_file_name, bot_name: str):
     data = reader.get_data_for_check()
     task_data = RCSBatchCapabilityTask(task_id=task_id, data=data)
     bot = RCSBot[bot_name]
-    # loop = uvloop.new_event_loop()
-    # asyncio.set_event_loop(loop)
+
     loop = asyncio.get_event_loop()
     results = loop.run_until_complete(make_request(bot, task_data.data))
     task_results = []
@@ -85,10 +83,11 @@ async def make_request(bot: RCSBot, data_for_check: List[RCSDataForCheck]):
 
     try:
         task_result = await asyncio.gather(*[asyncio.create_task(coroutine) for coroutine in coroutines])
+        result = await parse_request(task_result)
     finally:
         await bot_client.client.session.close()
 
-    return await parse_request(task_result)
+    return result
 
 
 async def parse_request(task_result):

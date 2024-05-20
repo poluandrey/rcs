@@ -11,7 +11,7 @@ from RCS.sinch.schema import (FailedCapabilityResponse,
 
 logging.getLogger('asyncio').setLevel(logging.WARNING)
 
-BATCH_SIZE = 500
+BATCH_SIZE = 1000
 
 
 class ApiClient:
@@ -28,11 +28,7 @@ class ApiClient:
     async def rcs_capable(self, phone_number: str, country=None) -> ServiceCapabilityResponse:
         params = {'msisdn': phone_number}
         async with self.session.get(url=f'/rcs/v1/{self.bot_id}/capabilities', params=params, ssl=False) as resp:
-            try:
-                resp_json = await resp.json()
-            except:
-                print(resp.status)
-                print(resp.content)
+            resp_json = await resp.json()
             is_capable = True if resp.status == 200 else False
             raw_resp = SuccessfulCapableResponse(**resp_json) if resp.status == 200 \
                 else FailedCapabilityResponse(**resp_json)
@@ -43,15 +39,6 @@ class ApiClient:
                 rcs_enable=is_capable,
                 raw_response=raw_resp
             )
-
-    # async def batch_capable_test(self, phone_numbers, country) -> AsyncIterator[List[ServiceCapabilityResponse]]:
-    #     phones_batch = [phone_numbers[i:i + BATCH_SIZE] for i in range(0, len(phone_numbers), BATCH_SIZE)]
-    #     for batch in phones_batch:
-    #         tasks = [asyncio.create_task(self.rcs_capable(phone_number=phone, country=country)) for phone in batch]
-    #         start_time = datetime.now()
-    #         batch_resp = await asyncio.gather(*tasks)
-    #         print(f'{country}: spend {datetime.now() - start_time} for {len(tasks)} requests', flush=True)
-    #         yield batch_resp
 
     async def batch_capable(self, phone_numbers, country) -> AsyncIterator[List[ServiceCapabilityResponse]]:
         all_data_for_check = [(phone, country) for phone in phone_numbers]
@@ -86,5 +73,3 @@ class ApiClient:
             print(f'{len(all_data_for_check)} requests did not send, {len(batch_tasks)} tasks in batch_tasks')
             if not all_data_for_check and not batch_tasks:
                 flag = False
-
-
